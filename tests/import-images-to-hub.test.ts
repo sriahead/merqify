@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { classifyStorageResponse, importExitCode } from "@/scripts/import-images-to-hub";
+import {
+  classifyStorageResponse,
+  importExitCode,
+  isSupportedHubImageKey,
+} from "@/scripts/import-images-to-hub";
 
 /**
  * #1705 R7, R9, R11: the two pure rules that decide whether a nightly hub sync
@@ -26,5 +30,25 @@ describe("importExitCode (R9)", () => {
     expect(importExitCode({ apply: true, failed: 0 })).toBe(0);
     expect(importExitCode({ apply: false, failed: 3 })).toBe(0);
     expect(importExitCode({ apply: false, failed: 0 })).toBe(0);
+  });
+});
+
+describe("isSupportedHubImageKey (#1711)", () => {
+  it.each([
+    ["products/apple.jpg", true],
+    ["products/apple.jpeg", true],
+    ["products/apple.png", true],
+    ["products/apple.webp", true],
+    ["products/apple.JPG", true],
+    ["products/apple.PNG", true],
+    ["products/apple.WEBP", true],
+    ["products/apple.svg", false],
+    ["products/gen-fresh-fruit/main.svg", false],
+    ["categories/placeholder.svg", false],
+    ["products/apple.gif", false],
+    ["products/apple.bmp", false],
+    ["products/apple", false],
+  ] as const)("%s is recognized as %s", (key, expected) => {
+    expect(isSupportedHubImageKey(key)).toBe(expected);
   });
 });

@@ -79,6 +79,17 @@ export function importExitCode({ apply, failed }: { apply: boolean; failed: numb
   return apply && failed > 0 ? 1 : 0;
 }
 
+/** #1711: Image Hub accepts only JPEG, PNG, and WebP raster images. */
+export function isSupportedHubImageKey(key: string): boolean {
+  const lower = key.toLowerCase();
+  return (
+    lower.endsWith(".jpg") ||
+    lower.endsWith(".jpeg") ||
+    lower.endsWith(".png") ||
+    lower.endsWith(".webp")
+  );
+}
+
 export function mapProductImageProvenance(source: ProductImageSource): {
   source: HubSource;
   licence: HubLicence;
@@ -206,7 +217,12 @@ async function main(): Promise<number> {
         if (limit && processedCount >= limit) break;
         processedCount++;
 
-        if (img.storageKey.endsWith("placeholder.svg")) {
+        if (img.storageKey.endsWith("placeholder.svg") || !isSupportedHubImageKey(img.storageKey)) {
+          if (!img.storageKey.endsWith("placeholder.svg")) {
+            console.warn(
+              `  [WARN] Skipping non-raster storage object: ${img.storageKey} (only JPEG, PNG and WebP are supported by Image Hub)`,
+            );
+          }
           skippedCount++;
           continue;
         }
@@ -251,6 +267,13 @@ async function main(): Promise<number> {
         });
 
         if (!importRes.ok) {
+          if (importRes.code === "unsupported_type") {
+            console.warn(
+              `  [WARN] ${title} (${img.storageKey}): unsupported image type for hub, skipping`,
+            );
+            skippedCount++;
+            continue;
+          }
           console.error(
             `  [FAILED] ${title} (${img.storageKey}): ${importRes.code} - ${importRes.message}`,
           );
@@ -312,6 +335,19 @@ async function main(): Promise<number> {
           if (limit && processedCount >= limit) break;
           processedCount++;
 
+          if (
+            cat.storageKey.endsWith("placeholder.svg") ||
+            !isSupportedHubImageKey(cat.storageKey)
+          ) {
+            if (!cat.storageKey.endsWith("placeholder.svg")) {
+              console.warn(
+                `  [WARN] Skipping non-raster storage object: ${cat.storageKey} (only JPEG, PNG and WebP are supported by Image Hub)`,
+              );
+            }
+            skippedCount++;
+            continue;
+          }
+
           const isAi = cat.style === "3d-icon";
           const provenance = {
             source: (isAi ? "AI_GENERATED" : "UPLOAD") as HubSource,
@@ -353,6 +389,13 @@ async function main(): Promise<number> {
           });
 
           if (!importRes.ok) {
+            if (importRes.code === "unsupported_type") {
+              console.warn(
+                `  [WARN] ${title} (${cat.storageKey}): unsupported image type for hub, skipping`,
+              );
+              skippedCount++;
+              continue;
+            }
             console.error(
               `  [FAILED] ${title} (${cat.storageKey}): ${importRes.code} - ${importRes.message}`,
             );

@@ -34,6 +34,11 @@ every branch merges.
 
 ### Fixed
 
+- **Image Hub nightly sync non-raster skip (#1711, 2026-11-21).**
+  - Updated `scripts/import-images-to-hub.ts` with `isSupportedHubImageKey` to skip non-raster vector images (`.svg` and unsupported extensions) with a warning instead of failing loudly, preventing stray vector assets from turning the nightly sync red.
+  - Handled `unsupported_type` hub responses gracefully as skips rather than fatal errors.
+  - Added unit test coverage in `tests/import-images-to-hub.test.ts`.
+
 - **Image library assignment and product image upload CORS resilience (#1705, 2026-11-21).**
   - Added same-origin fallback endpoint `/api/admin/image-library/upload-direct` that proxies WebP upload bytes through the Worker's server-to-server `putObject` when direct browser presigned PUT to object storage is blocked by CORS or storage policies.
   - Hardened `library-assign.ts`, `ProductImageUploader.tsx`, and `ProductImageManager.tsx` to catch storage upload rejections and automatically route through the same-origin upload fallback.
